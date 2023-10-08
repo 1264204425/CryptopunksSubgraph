@@ -75,12 +75,3 @@ type PunkNoLongerForSale @entity(immutable: true) {
   blockTimestamp: BigInt!
   transactionHash: Bytes!
 }
-
-type PunkHistoryPrice @entity(immutable: true) {
-  id: Bytes!
-  punkIndex: BigInt! # uint256
-  fromAddress: Bytes! # address
-  toAddress: Bytes! # address
-  price: BigInt!
-  timestamp: BigInt!
-}
