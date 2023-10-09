@@ -75,3 +75,20 @@ type PunkNoLongerForSale @entity(immutable: true) {
   blockTimestamp: BigInt!
   transactionHash: Bytes!
 }
+
+type PunkHistoryInfo @entity(immutable: true) {
+  id: Bytes!
+  punkIndex: BigInt! # uint256
+  fromAddress: Bytes! # address
+  toAddress: Bytes! # address
+  price: BigInt!
+  timestamp: BigInt!
+}
+
+type UserInfo @entity {
+  id: Bytes! # 用户地址作为唯一标识
+  punkTransactionCount: BigInt! # 用户交易的总次数
+  totalSpent: BigInt! # 用户花费的ETH总额
+  totalReceived: BigInt! # 用户收到的ETH总额
+  punkIndex: [BigInt!] # uint256
+}
