@@ -22,6 +22,7 @@ dataSources:
         - PunkBidWithdrawn
         - PunkBought
         - PunkNoLongerForSale
+        - PunkHistoryInfo
       abis:
         - name: CryptoPunks
           file: ./abis/CryptoPunks.json
