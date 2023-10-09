@@ -140,6 +140,7 @@ export function handlePunkBought(event: PunkBoughtEvent): void {
     if (!fromUser) {
         fromUser = new UserInfo(event.params.fromAddress)
         fromUser.punkTransactionCount = BigInt.fromI32(0)
+        fromUser.totalReceived = BigInt.fromI32(0)
         fromUser.totalSpent = BigInt.fromI32(0)
     }
 
@@ -149,6 +150,7 @@ export function handlePunkBought(event: PunkBoughtEvent): void {
         toUser = new UserInfo(event.params.toAddress)
         toUser.punkTransactionCount = BigInt.fromI32(0)
         toUser.totalReceived = BigInt.fromI32(0)
+        toUser.totalSpent = BigInt.fromI32(0)
     }
 
     // 更新fromUser
