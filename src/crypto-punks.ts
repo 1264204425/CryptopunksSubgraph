@@ -158,6 +158,9 @@ export function handlePunkBought(event: PunkBoughtEvent): void {
     // 更新toUser
     toUser.punkTransactionCount = toUser.punkTransactionCount.plus(BigInt.fromI32(1))
     toUser.totalReceived = toUser.totalReceived.plus(event.params.value)
+
+    fromUser.save()
+    toUser.save()
 }
 
 export function handlePunkNoLongerForSale(
