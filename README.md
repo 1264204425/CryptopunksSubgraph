@@ -21,3 +21,4 @@ Used to track Cryptopunks transactions
 
 9.PunkHistoryInfo：记录CryptoPunk的历史交易信息。  
 
+10.UserInfo：记录了每个地址的总交易信息。
