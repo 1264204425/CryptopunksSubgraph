@@ -76,18 +76,24 @@ type PunkNoLongerForSale @entity(immutable: true) {
   transactionHash: Bytes!
 }
 
-type PunkHistoryInfo @entity(immutable: true) {
-  id: Bytes!
-  punkIndex: BigInt! # uint256
-  fromAddress: Bytes! # address
-  toAddress: Bytes! # address
-  price: BigInt!
+type PunkHistoryInfo @entity{
+  id: String!
+  totalTransactions: BigInt! # 单个Punk的交易次数
+  totalValue: BigInt! # 总交易额
+  floorPrice: BigInt! # 最低价格
+  ceilingPrice: BigInt! # 最高价格
+  lastTradePrice: BigInt! # 最近一次交易价格
+  lastFromAddress: Bytes! # address
+  lastToAddress: Bytes! # address
   timestamp: BigInt!
 }
 
 type UserInfo @entity {
   id: Bytes! # 用户地址作为唯一标识
-  punkTransactionCount: BigInt! # 用户交易的总次数
+  userTransactionCount: BigInt! # 用户交易的总次数
+  boughtPunkCounts: BigInt! # 用户购买的Punk总数
+  soldPunkCounts: BigInt! # 用户出售的Punk总数
   totalSpent: BigInt! # 用户花费的ETH总额
   totalReceived: BigInt! # 用户收到的ETH总额
+  punkHoldingCount: BigInt! # 用户持有的 Punk 数量
 }

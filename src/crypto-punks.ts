@@ -20,7 +20,7 @@ import {
     PunkHistoryInfo,
     UserInfo
 } from "../generated/schema"
-import { BigInt } from "@graphprotocol/graph-ts";
+import { BigInt, Bytes } from "@graphprotocol/graph-ts";
 
 export function handleAssign(event: AssignEvent): void {
     let entity = new Assign(
@@ -34,6 +34,12 @@ export function handleAssign(event: AssignEvent): void {
     entity.transactionHash = event.transaction.hash
 
     entity.save()
+
+    // 处理用户信息
+    let toUser = getUserInfo(event.params.to)
+    toUser.punkHoldingCount = toUser.punkHoldingCount.plus((BigInt.fromI32(1)))
+
+    toUser.save()
 }
 
 export function handleTransfer(event: TransferEvent): void {
@@ -49,6 +55,16 @@ export function handleTransfer(event: TransferEvent): void {
     entity.transactionHash = event.transaction.hash
 
     entity.save()
+
+    // 处理用户信息
+    let fromUser = getUserInfo(event.params.from)
+    let toUser = getUserInfo(event.params.to)
+
+    fromUser.punkHoldingCount = fromUser.punkHoldingCount.minus(BigInt.fromI32(1))
+    toUser.punkHoldingCount = toUser.punkHoldingCount.plus((BigInt.fromI32(1)))
+
+    fromUser.save()
+    toUser.save()
 }
 
 export function handlePunkTransfer(event: PunkTransferEvent): void {
@@ -124,41 +140,50 @@ export function handlePunkBought(event: PunkBoughtEvent): void {
     punkBoughtEntity.save()
 
     // 处理单Punk历史记录
-    let historyEntity = new PunkHistoryInfo(
-        event.transaction.hash.concatI32(event.logIndex.toI32())
-    )
-    historyEntity.punkIndex = event.params.punkIndex
-    historyEntity.fromAddress = event.params.fromAddress
-    historyEntity.toAddress = event.params.toAddress
-    historyEntity.price = event.params.value
-    historyEntity.timestamp = event.block.timestamp
-    historyEntity.save()
+    let punkHistoryEntity = PunkHistoryInfo.load(event.params.punkIndex.toString())
+    if (punkHistoryEntity == null) {
+        punkHistoryEntity = new PunkHistoryInfo(event.params.punkIndex.toString())
+        // 在保存实体之前，确保设置了所有必填字段：
+        punkHistoryEntity.totalTransactions = BigInt.fromI32(1)
+        punkHistoryEntity.lastFromAddress = event.params.fromAddress
+        punkHistoryEntity.lastToAddress = event.params.toAddress
+        punkHistoryEntity.timestamp = event.block.timestamp
+
+        // 初始交易，设置floorPrice和ceilingPrice为交易价格
+        punkHistoryEntity.lastTradePrice = event.params.value
+        punkHistoryEntity.totalValue = event.params.value
+        punkHistoryEntity.floorPrice = event.params.value
+        punkHistoryEntity.ceilingPrice = event.params.value
+
+        punkHistoryEntity.save();
+    } else {
+        // 如果punkHistoryEntity已经存在，就对TransactionCounts加一，并保存
+        punkHistoryEntity.totalTransactions = punkHistoryEntity.totalTransactions.plus(BigInt.fromI32(1))
+        punkHistoryEntity.totalValue = punkHistoryEntity.totalValue.plus(event.params.value)
+
+        // 判断最高最低价
+        if (event.params.value.gt(punkHistoryEntity.ceilingPrice)) {
+            punkHistoryEntity.ceilingPrice = event.params.value
+        }
+        if (event.params.value.lt(punkHistoryEntity.floorPrice)) {
+            punkHistoryEntity.floorPrice = event.params.value
+        }
+
+        punkHistoryEntity.save()
+    }
 
     // 设置用户信息
-    let fromUser = UserInfo.load(event.params.fromAddress)
-    // 如果fromUser不存在，创建新的
-    if (!fromUser) {
-        fromUser = new UserInfo(event.params.fromAddress)
-        fromUser.punkTransactionCount = BigInt.fromI32(0)
-        fromUser.totalReceived = BigInt.fromI32(0)
-        fromUser.totalSpent = BigInt.fromI32(0)
-    }
-
-    let toUser = UserInfo.load(event.params.toAddress)
-    // 如果toUser不存在，创建新的
-    if (!toUser) {
-        toUser = new UserInfo(event.params.toAddress)
-        toUser.punkTransactionCount = BigInt.fromI32(0)
-        toUser.totalReceived = BigInt.fromI32(0)
-        toUser.totalSpent = BigInt.fromI32(0)
-    }
+    let fromUser = getUserInfo(event.params.fromAddress)
+    let toUser = getUserInfo(event.params.toAddress)
 
     // 更新fromUser
-    fromUser.punkTransactionCount = fromUser.punkTransactionCount.plus(BigInt.fromI32(1))
+    fromUser.soldPunkCounts = fromUser.soldPunkCounts.plus(BigInt.fromI32(1))
+    fromUser.userTransactionCount = fromUser.userTransactionCount.plus(BigInt.fromI32(1))
     fromUser.totalSpent = fromUser.totalSpent.plus(event.params.value)
 
     // 更新toUser
-    toUser.punkTransactionCount = toUser.punkTransactionCount.plus(BigInt.fromI32(1))
+    toUser.boughtPunkCounts = toUser.boughtPunkCounts.plus(BigInt.fromI32(1))
+    toUser.userTransactionCount = toUser.userTransactionCount.plus(BigInt.fromI32(1))
     toUser.totalReceived = toUser.totalReceived.plus(event.params.value)
 
     fromUser.save()
@@ -178,4 +203,21 @@ export function handlePunkNoLongerForSale(
     entity.transactionHash = event.transaction.hash
 
     entity.save()
+}
+
+export function getUserInfo(address: Bytes): UserInfo {
+    let user = UserInfo.load(address)
+
+    if (!user) {
+        user = new UserInfo(address)
+        user.userTransactionCount = BigInt.fromI32(0)
+        user.totalReceived = BigInt.fromI32(0)
+        user.totalSpent = BigInt.fromI32(0)
+        user.boughtPunkCounts = BigInt.fromI32(0)
+        user.soldPunkCounts = BigInt.fromI32(0)
+        user.punkHoldingCount = BigInt.fromI32(0)
+        user.save()
+    }
+
+    return user as UserInfo
 }
